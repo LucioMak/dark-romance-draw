@@ -1,0 +1,13 @@
+Mise à jour interface compacte
+
+Fichiers à remplacer sur GitHub :
+- index.html
+- style.css
+- app.js
+- service-worker.js
+
+Ce correctif met le bouton de tirage, le résultat, le média et les boutons Fait/Pas fait/Retirer/Modifier dans la même zone.
+Les filtres avancés sont maintenant repliés dans un panneau "Filtres avancés" pour éviter de scroller pendant le jeu.
+Le service worker a été renommé en v3-compact-ui pour forcer Chrome à récupérer la nouvelle version.
+
+Après mise en ligne : attendre 1 à 3 minutes, ouvrir l'application, actualiser deux fois.

@@ -55,12 +55,18 @@
     </nav>
 
     <main>
-      <section id="draw-view" class="view active">
-        <div class="hero-grid">
-          <article class="panel draw-panel">
-            <p class="eyebrow">Tirage au sort</p>
-            <h2>Une carte, un destin, et probablement une excuse pour cliquer encore.</h2>
-            <div class="draw-options">
+      <section id="draw-view" class="view active draw-compact-view">
+        <div class="play-layout">
+          <article class="panel draw-panel compact-draw-panel">
+            <div class="draw-topline">
+              <div>
+                <p class="eyebrow">Tirage au sort</p>
+                <h2>Le tirage, le média et les boutons au même endroit.</h2>
+              </div>
+              <span class="pill soft-pill">Mode jeu</span>
+            </div>
+
+            <div class="quick-draw-controls">
               <label>Mode
                 <select id="draw-target">
                   <option value="surprise">Surprise : choisir Lui ou Elle</option>
@@ -70,37 +76,66 @@
                   <option value="all">Tout inclure</option>
                 </select>
               </label>
-              <label>Type de tirage
-                <select id="draw-mode">
-                  <option value="random">Aléatoire pur</option>
-                  <option value="level">Favoriser les niveaux choisis</option>
-                  <option value="balanced">Équilibrer Lui / Elle</option>
-                </select>
-              </label>
-              <fieldset class="levels" id="draw-levels">
-                <legend>Niveaux</legend>
-                <label><input type="checkbox" value="1" checked /> 1</label>
-                <label><input type="checkbox" value="2" checked /> 2</label>
-                <label><input type="checkbox" value="3" checked /> 3</label>
-                <label><input type="checkbox" value="4" checked /> 4</label>
-                <label><input type="checkbox" value="5" checked /> 5</label>
-              </fieldset>
-              <label class="check-row"><input type="checkbox" id="include-done" /> Inclure aussi les médias déjà faits</label>
-              <div class="tag-grid">
-                <label>Tags à inclure
-                  <input id="include-tags" placeholder="ex : doux, défi" />
-                </label>
-                <label>Tags à exclure
-                  <input id="exclude-tags" placeholder="ex : trop long" />
-                </label>
-              </div>
+              <button id="draw-btn" class="big-btn compact-draw-btn">Lancer le tirage</button>
             </div>
-            <button id="draw-btn" class="big-btn">Lancer le tirage</button>
+
+            <section id="result-card" class="result-card compact-result hidden" aria-live="polite">
+              <div class="result-glow"></div>
+              <div class="result-header compact-result-header">
+                <div>
+                  <p class="eyebrow">Résultat</p>
+                  <h2 id="result-target">Pour Lui</h2>
+                  <p id="result-title">Titre</p>
+                </div>
+                <span id="result-level" class="pill">Niveau 1</span>
+              </div>
+              <div class="result-actions compact-result-actions">
+                <button id="mark-done-btn" class="primary-btn">Fait</button>
+                <button id="mark-not-done-btn" class="ghost-btn">Pas fait</button>
+                <button id="reroll-btn" class="ghost-btn">Retirer</button>
+                <button id="edit-result-btn" class="ghost-btn">Modifier</button>
+              </div>
+              <div id="result-media" class="result-media compact-result-media"></div>
+              <p id="result-note" class="note compact-note"></p>
+              <div id="result-tags" class="tag-list compact-tags"></div>
+            </section>
+
+            <details class="advanced-draw-settings">
+              <summary>Filtres avancés : niveaux, tags, déjà faits</summary>
+              <div class="draw-options compact-options">
+                <label>Type de tirage
+                  <select id="draw-mode">
+                    <option value="random">Aléatoire pur</option>
+                    <option value="level">Favoriser les niveaux choisis</option>
+                    <option value="balanced">Équilibrer Lui / Elle</option>
+                  </select>
+                </label>
+                <fieldset class="levels" id="draw-levels">
+                  <legend>Niveaux</legend>
+                  <label><input type="checkbox" value="1" checked /> 1</label>
+                  <label><input type="checkbox" value="2" checked /> 2</label>
+                  <label><input type="checkbox" value="3" checked /> 3</label>
+                  <label><input type="checkbox" value="4" checked /> 4</label>
+                  <label><input type="checkbox" value="5" checked /> 5</label>
+                </fieldset>
+                <label class="check-row"><input type="checkbox" id="include-done" /> Inclure aussi les médias déjà faits</label>
+                <div class="tag-grid">
+                  <label>Tags à inclure
+                    <input id="include-tags" placeholder="ex : doux, défi" />
+                  </label>
+                  <label>Tags à exclure
+                    <input id="exclude-tags" placeholder="ex : trop long" />
+                  </label>
+                </div>
+              </div>
+            </details>
           </article>
 
-          <aside class="panel timer-panel">
-            <p class="eyebrow">Chronomètre</p>
-            <div id="timer-display" class="timer-display">00:00.0</div>
+          <aside class="panel timer-panel compact-timer">
+            <div class="timer-headline">
+              <p class="eyebrow">Chronomètre</p>
+              <div id="timer-display" class="timer-display">00:00.0</div>
+            </div>
             <div class="timer-actions">
               <button id="timer-toggle" class="primary-btn">Démarrer</button>
               <button id="timer-reset" class="ghost-btn">Reset</button>
@@ -110,28 +145,7 @@
           </aside>
         </div>
 
-        <section id="result-card" class="result-card hidden" aria-live="polite">
-          <div class="result-glow"></div>
-          <div class="result-header">
-            <div>
-              <p class="eyebrow">Résultat</p>
-              <h2 id="result-target">Pour Lui</h2>
-              <p id="result-title">Titre</p>
-            </div>
-            <span id="result-level" class="pill">Niveau 1</span>
-          </div>
-          <div id="result-media" class="result-media"></div>
-          <p id="result-note" class="note"></p>
-          <div id="result-tags" class="tag-list"></div>
-          <div class="result-actions">
-            <button id="mark-done-btn" class="primary-btn">Fait</button>
-            <button id="mark-not-done-btn" class="ghost-btn">Pas fait</button>
-            <button id="reroll-btn" class="ghost-btn">Retirer</button>
-            <button id="edit-result-btn" class="ghost-btn">Modifier</button>
-          </div>
-        </section>
-
-        <section class="stats-strip">
+        <section class="stats-strip compact-stats">
           <div><strong id="stat-media">0</strong><span>Médias</span></div>
           <div><strong id="stat-undone">0</strong><span>Pas faits</span></div>
           <div><strong id="stat-done">0</strong><span>Faits</span></div>

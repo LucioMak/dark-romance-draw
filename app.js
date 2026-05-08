@@ -997,7 +997,7 @@
     els.resultNote.textContent = media.note || '';
     els.resultTags.innerHTML = (media.tags || []).map(tag => `<span>${escapeHtml(tag)}</span>`).join('');
     await renderMediaElement(media, els.resultMedia, { controls: true, autoplay: true, loading: 'eager' });
-    els.resultCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Résultat affiché directement sous le bouton : pas de scroll automatique.
   }
 
   async function markCurrentResult(done) {

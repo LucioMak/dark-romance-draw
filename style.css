@@ -429,3 +429,213 @@ video.needs-tap {
   outline: 1px solid rgba(255, 116, 156, .45);
   box-shadow: 0 0 22px rgba(255, 46, 99, .18);
 }
+
+
+/* Mise en page compacte du tirage : bouton + résultat + actions sans scroller comme un hamster. */
+.play-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, .32fr);
+  gap: 12px;
+  align-items: start;
+}
+.compact-draw-panel { padding: clamp(12px, 2vw, 18px); }
+.draw-topline {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.compact-draw-panel h2 {
+  margin: 0;
+  font-size: clamp(1.15rem, 3vw, 1.65rem);
+  line-height: 1.08;
+}
+.soft-pill { font-size: .78rem; opacity: .88; }
+.quick-draw-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.compact-draw-btn {
+  margin: 0;
+  min-width: 190px;
+  height: 50px;
+  padding: 12px 18px;
+  border-radius: 16px;
+}
+.advanced-draw-settings {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,.035);
+  overflow: hidden;
+}
+.advanced-draw-settings summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 11px 13px;
+  color: #ffddec;
+  font-weight: 800;
+}
+.advanced-draw-settings summary::-webkit-details-marker { display: none; }
+.advanced-draw-settings summary::after {
+  content: '＋';
+  float: right;
+  opacity: .75;
+}
+.advanced-draw-settings[open] summary::after { content: '−'; }
+.compact-options {
+  padding: 0 13px 13px;
+  gap: 10px;
+}
+.compact-result {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 22px;
+  display: grid;
+  grid-template-rows: auto auto minmax(170px, 1fr) auto auto;
+  gap: 8px;
+}
+.compact-result-header { align-items: center; }
+.compact-result-header h2 {
+  font-size: clamp(1.25rem, 4vw, 2rem);
+  line-height: 1;
+}
+.compact-result-header p { margin-top: 3px; }
+.compact-result-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.compact-result-actions button {
+  min-height: 42px;
+  padding: 9px 10px;
+}
+.compact-result-media {
+  margin: 0;
+  min-height: 180px;
+  max-height: min(52vh, 520px);
+  border-radius: 18px;
+}
+.compact-result-media img,
+.compact-result-media video {
+  width: 100%;
+  height: 100%;
+  max-height: min(52vh, 520px);
+  object-fit: contain;
+}
+.compact-note {
+  margin: 0;
+  max-height: 2.8em;
+  overflow: auto;
+}
+.compact-tags { margin: 0; }
+.compact-timer {
+  padding: 12px;
+  border-radius: 22px;
+}
+.timer-headline {
+  display: grid;
+  gap: 3px;
+}
+.compact-timer .timer-display {
+  font-size: clamp(1.55rem, 4vw, 2.25rem);
+  margin: 0 0 8px;
+  letter-spacing: -.04em;
+}
+.compact-timer .timer-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.compact-timer .timer-actions button {
+  min-height: 38px;
+  padding: 7px 9px;
+  font-size: .82rem;
+}
+.compact-timer .lap-list {
+  max-height: 90px;
+  margin-top: 8px;
+}
+.compact-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.compact-stats div { padding: 10px; border-radius: 14px; }
+.compact-stats strong { font-size: 1.15rem; }
+.compact-stats span { font-size: .75rem; }
+
+@media (max-width: 920px) {
+  .play-layout { grid-template-columns: 1fr; }
+  .compact-timer { order: 2; }
+}
+
+@media (max-width: 640px) {
+  .app-shell { width: min(100% - 14px, 1240px); padding-top: 6px; }
+  .topbar { padding: 6px 0; }
+  .brand-mark.small { width: 34px; height: 34px; border-radius: 11px; font-size: .75rem; }
+  .title-block { gap: 8px; }
+  .title-block h1 { font-size: 1.05rem; }
+  .eyebrow { font-size: .68rem; }
+  .top-actions .ghost-btn { min-height: 36px; padding: 7px 10px; font-size: .78rem; }
+  .tabs { gap: 6px; padding: 6px 0 8px; }
+  .tab { min-height: 36px; padding: 7px 10px; font-size: .82rem; }
+  .panel { border-radius: 20px; }
+  .compact-draw-panel { padding: 10px; }
+  .draw-topline { margin-bottom: 8px; }
+  .compact-draw-panel h2 { font-size: 1rem; }
+  .soft-pill { display: none; }
+  .quick-draw-controls { grid-template-columns: 1fr; gap: 8px; }
+  .quick-draw-controls label { gap: 5px; }
+  .quick-draw-controls select { min-height: 40px; padding: 9px 11px; }
+  .compact-draw-btn { width: 100%; min-width: 0; height: 46px; min-height: 46px; padding: 10px 12px; }
+  .compact-result {
+    margin-top: 8px;
+    padding: 9px;
+    border-radius: 18px;
+    gap: 7px;
+  }
+  .compact-result-header h2 { font-size: 1.08rem; }
+  .compact-result-header .eyebrow { display: none; }
+  .compact-result-header p { font-size: .82rem; max-width: 52vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .compact-result-header .pill { padding: 6px 8px; font-size: .74rem; }
+  .compact-result-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .compact-result-actions button {
+    min-height: 38px;
+    padding: 7px 6px;
+    font-size: .78rem;
+  }
+  .compact-result-media {
+    min-height: 168px;
+    max-height: 38svh;
+    border-radius: 15px;
+  }
+  .compact-result-media img,
+  .compact-result-media video { max-height: 38svh; }
+  .compact-note { font-size: .82rem; max-height: 2.4em; }
+  .compact-tags { display: none; }
+  .advanced-draw-settings { margin-top: 8px; border-radius: 14px; }
+  .advanced-draw-settings summary { padding: 9px 11px; font-size: .84rem; }
+  .compact-options { padding: 0 10px 10px; }
+  .compact-timer { padding: 9px; }
+  .compact-timer .timer-headline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .compact-timer .timer-display { font-size: 1.35rem; margin: 0; }
+  .compact-timer .timer-actions button { min-height: 34px; padding: 6px; font-size: .76rem; }
+  .compact-timer .lap-list { display: none; }
+  .compact-stats { grid-template-columns: repeat(4, 1fr); gap: 5px; }
+  .compact-stats div { padding: 6px 4px; text-align: center; border-radius: 10px; }
+  .compact-stats strong { font-size: .95rem; }
+  .compact-stats span { font-size: .61rem; }
+}
