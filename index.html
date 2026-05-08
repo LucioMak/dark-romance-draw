@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#16040d" />
+  <meta name="description" content="Dark Romance Draw, tirage privé de GIFs et médias animés pour Lui et Elle." />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+  <title>Dark Romance Draw</title>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+  </div>
+
+  <section id="lock-screen" class="lock-screen hidden" aria-live="polite">
+    <div class="lock-card">
+      <div class="brand-mark">DR</div>
+      <h1>Dark Romance Draw</h1>
+      <p id="lock-subtitle">Déverrouille l’application privée.</p>
+
+      <form id="pin-form" class="pin-form" autocomplete="off">
+        <input id="pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" aria-label="Code PIN à 4 chiffres" />
+        <input id="pin-confirm" class="hidden" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Confirmer" aria-label="Confirmer le code PIN" />
+        <button class="primary-btn" type="submit" id="pin-submit">Entrer</button>
+      </form>
+      <p id="pin-message" class="message"></p>
+      <button id="reset-app-from-lock" class="ghost-btn danger subtle">Réinitialiser les données locales</button>
+    </div>
+  </section>
+
+  <div id="app-shell" class="app-shell hidden">
+    <header class="topbar">
+      <div class="title-block">
+        <div class="brand-mark small">DR</div>
+        <div>
+          <p class="eyebrow">PWA privée</p>
+          <h1>Dark Romance Draw</h1>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="install-btn" class="ghost-btn hidden">Installer</button>
+        <button id="lock-btn" class="ghost-btn">Verrouiller</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Navigation principale">
+      <button class="tab active" data-view="draw-view">Tirage</button>
+      <button class="tab" data-view="library-view">Bibliothèque</button>
+      <button class="tab" data-view="import-view">Import</button>
+      <button class="tab" data-view="history-view">Historique</button>
+      <button class="tab" data-view="music-view">Musique</button>
+      <button class="tab" data-view="settings-view">Paramètres</button>
+    </nav>
+
+    <main>
+      <section id="draw-view" class="view active">
+        <div class="hero-grid">
+          <article class="panel draw-panel">
+            <p class="eyebrow">Tirage au sort</p>
+            <h2>Une carte, un destin, et probablement une excuse pour cliquer encore.</h2>
+            <div class="draw-options">
+              <label>Mode
+                <select id="draw-target">
+                  <option value="surprise">Surprise : choisir Lui ou Elle</option>
+                  <option value="lui">Pour Lui</option>
+                  <option value="elle">Pour Elle</option>
+                  <option value="mixte">Mixte uniquement</option>
+                  <option value="all">Tout inclure</option>
+                </select>
+              </label>
+              <label>Type de tirage
+                <select id="draw-mode">
+                  <option value="random">Aléatoire pur</option>
+                  <option value="level">Favoriser les niveaux choisis</option>
+                  <option value="balanced">Équilibrer Lui / Elle</option>
+                </select>
+              </label>
+              <fieldset class="levels" id="draw-levels">
+                <legend>Niveaux</legend>
+                <label><input type="checkbox" value="1" checked /> 1</label>
+                <label><input type="checkbox" value="2" checked /> 2</label>
+                <label><input type="checkbox" value="3" checked /> 3</label>
+                <label><input type="checkbox" value="4" checked /> 4</label>
+                <label><input type="checkbox" value="5" checked /> 5</label>
+              </fieldset>
+              <label class="check-row"><input type="checkbox" id="include-done" /> Inclure aussi les médias déjà faits</label>
+              <div class="tag-grid">
+                <label>Tags à inclure
+                  <input id="include-tags" placeholder="ex : doux, défi" />
+                </label>
+                <label>Tags à exclure
+                  <input id="exclude-tags" placeholder="ex : trop long" />
+                </label>
+              </div>
+            </div>
+            <button id="draw-btn" class="big-btn">Lancer le tirage</button>
+          </article>
+
+          <aside class="panel timer-panel">
+            <p class="eyebrow">Chronomètre</p>
+            <div id="timer-display" class="timer-display">00:00.0</div>
+            <div class="timer-actions">
+              <button id="timer-toggle" class="primary-btn">Démarrer</button>
+              <button id="timer-reset" class="ghost-btn">Reset</button>
+              <button id="timer-lap" class="ghost-btn">Tour</button>
+            </div>
+            <ul id="lap-list" class="lap-list"></ul>
+          </aside>
+        </div>
+
+        <section id="result-card" class="result-card hidden" aria-live="polite">
+          <div class="result-glow"></div>
+          <div class="result-header">
+            <div>
+              <p class="eyebrow">Résultat</p>
+              <h2 id="result-target">Pour Lui</h2>
+              <p id="result-title">Titre</p>
+            </div>
+            <span id="result-level" class="pill">Niveau 1</span>
+          </div>
+          <div id="result-media" class="result-media"></div>
+          <p id="result-note" class="note"></p>
+          <div id="result-tags" class="tag-list"></div>
+          <div class="result-actions">
+            <button id="mark-done-btn" class="primary-btn">Fait</button>
+            <button id="mark-not-done-btn" class="ghost-btn">Pas fait</button>
+            <button id="reroll-btn" class="ghost-btn">Retirer</button>
+            <button id="edit-result-btn" class="ghost-btn">Modifier</button>
+          </div>
+        </section>
+
+        <section class="stats-strip">
+          <div><strong id="stat-media">0</strong><span>Médias</span></div>
+          <div><strong id="stat-undone">0</strong><span>Pas faits</span></div>
+          <div><strong id="stat-done">0</strong><span>Faits</span></div>
+          <div><strong id="stat-draws">0</strong><span>Tirages</span></div>
+        </section>
+      </section>
+
+      <section id="library-view" class="view">
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Gestion</p>
+              <h2>Bibliothèque</h2>
+            </div>
+            <div class="bulk-actions">
+              <button id="bulk-done" class="ghost-btn">Marquer fait</button>
+              <button id="bulk-undone" class="ghost-btn">Marquer pas fait</button>
+              <button id="bulk-delete" class="ghost-btn danger">Supprimer sélection</button>
+            </div>
+          </div>
+          <div class="filters">
+            <input id="search-input" placeholder="Rechercher un média..." />
+            <select id="filter-target">
+              <option value="all">Lui, Elle, Mixte</option>
+              <option value="lui">Lui</option>
+              <option value="elle">Elle</option>
+              <option value="mixte">Mixte</option>
+            </select>
+            <select id="filter-level">
+              <option value="all">Tous niveaux</option>
+              <option value="1">Niveau 1</option>
+              <option value="2">Niveau 2</option>
+              <option value="3">Niveau 3</option>
+              <option value="4">Niveau 4</option>
+              <option value="5">Niveau 5</option>
+            </select>
+            <select id="filter-done">
+              <option value="all">Fait + pas fait</option>
+              <option value="done">Fait</option>
+              <option value="undone">Pas fait</option>
+            </select>
+            <select id="filter-type">
+              <option value="all">Tous formats</option>
+              <option value="gif">GIF</option>
+              <option value="webp">WEBP</option>
+              <option value="mp4">MP4</option>
+              <option value="webm">WEBM</option>
+              <option value="mov">MOV</option>
+              <option value="png">PNG/APNG</option>
+            </select>
+            <input id="filter-tags" placeholder="Filtrer tags" />
+            <select id="sort-media">
+              <option value="createdDesc">Plus récent</option>
+              <option value="createdAsc">Plus ancien</option>
+              <option value="titleAsc">Nom A-Z</option>
+              <option value="levelDesc">Niveau haut</option>
+              <option value="levelAsc">Niveau bas</option>
+              <option value="targetAsc">Lui/Elle/Mixte</option>
+              <option value="doneAsc">Pas faits d’abord</option>
+            </select>
+          </div>
+          <div id="library-count" class="muted"></div>
+          <div id="media-grid" class="media-grid"></div>
+          <div class="pager">
+            <button id="prev-page" class="ghost-btn">Précédent</button>
+            <span id="page-label">Page 1</span>
+            <button id="next-page" class="ghost-btn">Suivant</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="import-view" class="view">
+        <div class="panel import-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Ajout</p>
+              <h2>Importer des GIFs, vidéos et médias animés</h2>
+            </div>
+          </div>
+          <div id="drop-zone" class="drop-zone">
+            <input id="file-input" type="file" multiple accept="image/gif,image/webp,image/png,video/mp4,video/webm,video/quicktime,.gif,.webp,.mp4,.webm,.mov,.m4v,.apng" />
+            <div>
+              <strong>Glisse tes fichiers ici</strong>
+              <span>ou touche pour sélectionner depuis Android</span>
+            </div>
+          </div>
+          <div class="import-defaults">
+            <label>Par défaut pour
+              <select id="default-target">
+                <option value="lui">Lui</option>
+                <option value="elle">Elle</option>
+                <option value="mixte" selected>Mixte</option>
+              </select>
+            </label>
+            <label>Niveau par défaut
+              <select id="default-level">
+                <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option>
+              </select>
+            </label>
+            <label>Tags par défaut
+              <input id="default-tags" placeholder="ex : doux, surprise" />
+            </label>
+          </div>
+          <div id="staging-summary" class="muted"></div>
+          <div id="staging-list" class="staging-list"></div>
+          <div class="sticky-actions">
+            <button id="clear-staging" class="ghost-btn">Vider la sélection</button>
+            <button id="save-staging" class="primary-btn">Importer dans l’application</button>
+          </div>
+          <div id="import-progress" class="progress hidden"><span></span></div>
+        </div>
+      </section>
+
+      <section id="history-view" class="view">
+        <div class="panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Mémoire</p>
+              <h2>Historique des tirages</h2>
+            </div>
+            <button id="clear-history" class="ghost-btn danger">Vider l’historique</button>
+          </div>
+          <div id="history-stats" class="mini-stats"></div>
+          <div id="history-list" class="history-list"></div>
+        </div>
+      </section>
+
+      <section id="music-view" class="view">
+        <div class="panel music-panel">
+          <p class="eyebrow">Ambiance</p>
+          <h2>Musique</h2>
+          <div class="music-grid">
+            <article class="music-card">
+              <h3>Deezer</h3>
+              <p class="muted">Colle un lien track, album ou playlist Deezer. Si le lecteur externe refuse, le bouton ouvre Deezer. Le web adore les limitations, c’est sa poésie malade.</p>
+              <div class="inline-form">
+                <input id="deezer-url" placeholder="https://www.deezer.com/playlist/..." />
+                <button id="load-deezer" class="primary-btn">Charger</button>
+              </div>
+              <div id="deezer-player" class="deezer-player"></div>
+            </article>
+            <article class="music-card">
+              <h3>Audio local</h3>
+              <input id="audio-input" type="file" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4,.mp3,.wav,.ogg,.m4a" />
+              <audio id="local-audio" controls loop></audio>
+              <label class="check-row"><input id="audio-loop" type="checkbox" checked /> Boucle activée</label>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="settings-view" class="view">
+        <div class="panel settings-panel">
+          <p class="eyebrow">Contrôle</p>
+          <h2>Paramètres</h2>
+          <div class="settings-grid">
+            <article>
+              <h3>Sécurité</h3>
+              <div class="inline-form stacked">
+                <input id="old-pin" maxlength="4" inputmode="numeric" placeholder="Ancien PIN" />
+                <input id="new-pin" maxlength="4" inputmode="numeric" placeholder="Nouveau PIN" />
+                <button id="change-pin" class="primary-btn">Changer le PIN</button>
+              </div>
+            </article>
+            <article>
+              <h3>Thème</h3>
+              <select id="theme-select">
+                <option value="dark-romance">Dark Romance</option>
+                <option value="rouge-nuit">Rouge Nuit</option>
+                <option value="violet-obsession">Violet Obsession</option>
+                <option value="noir-elegant">Noir Élégant</option>
+              </select>
+              <label class="check-row"><input id="animations-toggle" type="checkbox" checked /> Animations</label>
+            </article>
+            <article>
+              <h3>Sauvegarde</h3>
+              <div class="button-stack">
+                <button id="export-light" class="ghost-btn">Exporter léger</button>
+                <button id="export-full" class="ghost-btn">Exporter complet</button>
+                <label class="file-label">Importer sauvegarde<input id="backup-input" type="file" accept="application/json,.json" /></label>
+              </div>
+            </article>
+            <article>
+              <h3>Nettoyage</h3>
+              <div class="button-stack">
+                <button id="reset-statuses" class="ghost-btn">Réinitialiser fait/pas fait</button>
+                <button id="delete-history" class="ghost-btn danger">Supprimer historique</button>
+                <button id="delete-all" class="ghost-btn danger">Tout supprimer</button>
+              </div>
+            </article>
+          </div>
+          <div id="storage-info" class="storage-info"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="edit-dialog" class="edit-dialog">
+    <form method="dialog" id="edit-form">
+      <h2>Modifier le média</h2>
+      <input type="hidden" id="edit-id" />
+      <label>Titre<input id="edit-title" /></label>
+      <label>Pour
+        <select id="edit-target">
+          <option value="lui">Lui</option>
+          <option value="elle">Elle</option>
+          <option value="mixte">Mixte</option>
+        </select>
+      </label>
+      <label>Niveau
+        <select id="edit-level">
+          <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+        </select>
+      </label>
+      <label>Tags<input id="edit-tags" placeholder="séparés par virgules" /></label>
+      <label>Note<textarea id="edit-note"></textarea></label>
+      <label class="check-row"><input id="edit-done" type="checkbox" /> Fait</label>
+      <menu>
+        <button class="ghost-btn" value="cancel">Annuler</button>
+        <button id="save-edit" class="primary-btn" value="default">Enregistrer</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="app.js"></script>
+</body>
+</html>

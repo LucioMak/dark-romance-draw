@@ -1,0 +1,25 @@
+{
+  "name": "Dark Romance Draw",
+  "short_name": "DR Draw",
+  "description": "Application privée de tirage au sort de GIFs et médias animés pour Lui et Elle.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#090308",
+  "theme_color": "#16040d",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
