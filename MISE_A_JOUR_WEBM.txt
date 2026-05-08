@@ -1,0 +1,17 @@
+Mise à jour WEBM
+
+Ce paquet corrige l'affichage des fichiers .webm dans l'application.
+
+Fichiers importants à remplacer sur GitHub :
+- app.js
+- style.css
+- service-worker.js
+
+Méthode rapide :
+1. Dézippez ce dossier.
+2. Sur GitHub, dans votre dépôt, utilisez + puis Télécharger des fichiers.
+3. Téléversez app.js, style.css et service-worker.js en remplacement des anciens.
+4. Validez les modifications.
+5. Ouvrez l'application, puis forcez le rechargement si besoin.
+
+Important : si l'ancien service worker garde la vieille version en cache, ouvrez le site dans Chrome, menu ⋮, puis rechargez la page 1 ou 2 fois. Vous pouvez aussi supprimer les données du site si nécessaire.

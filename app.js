@@ -468,6 +468,41 @@
     state.objectUrls.clear();
   }
 
+  function setupVideoElement(video, url, options = {}) {
+    video.src = url;
+    video.loop = true;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.autoplay = options.autoplay !== false;
+    video.controls = options.controls !== false;
+    video.preload = options.preload || 'auto';
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+
+    const tryPlay = () => {
+      if (options.autoplay === false) return;
+      const promise = video.play();
+      if (promise && typeof promise.catch === 'function') {
+        promise.catch(() => {
+          video.controls = true;
+          video.classList.add('needs-tap');
+          video.title = 'Appuie pour lancer la vidéo';
+        });
+      }
+    };
+
+    video.addEventListener('loadeddata', tryPlay, { once: true });
+    video.addEventListener('canplay', tryPlay, { once: true });
+    video.addEventListener('click', () => {
+      if (video.paused) tryPlay();
+    });
+    requestAnimationFrame(tryPlay);
+    setTimeout(tryPlay, 300);
+    return video;
+  }
+
   async function renderMediaElement(media, container, options = {}) {
     container.innerHTML = '<span class="muted">Chargement...</span>';
     const fileRow = await getStoreValue('files', media.id);
@@ -479,19 +514,11 @@
     const kind = media.kind || detectKind(media.mimeType, media.fileName);
     container.innerHTML = '';
     if (kind === 'video') {
-      const video = document.createElement('video');
-      video.src = url;
-      video.loop = true;
-      video.muted = true;
-      video.playsInline = true;
-      video.autoplay = options.autoplay !== false;
-      video.controls = options.controls !== false;
-      video.preload = 'metadata';
+      const video = setupVideoElement(document.createElement('video'), url, options);
       video.addEventListener('error', () => {
         container.innerHTML = '<span class="muted">Ce format vidéo n’est pas supporté par ce navigateur.</span>';
       });
       container.appendChild(video);
-      if (video.autoplay) video.play().catch(() => { video.controls = true; });
     } else {
       const img = document.createElement('img');
       img.src = url;
@@ -565,12 +592,7 @@
       preview.className = 'staging-preview';
       const url = createUrl(item.file);
       if (item.kind === 'video') {
-        const video = document.createElement('video');
-        video.src = url;
-        video.loop = true;
-        video.muted = true;
-        video.playsInline = true;
-        video.preload = 'metadata';
+        const video = setupVideoElement(document.createElement('video'), url, { controls: false, autoplay: true, preload: 'auto' });
         preview.appendChild(video);
       } else {
         const img = document.createElement('img');
@@ -778,7 +800,7 @@
     thumb.className = 'media-thumb';
     const observer = new IntersectionObserver(entries => {
       if (entries.some(entry => entry.isIntersecting)) {
-        renderMediaElement(media, thumb, { controls: false, autoplay: false, loading: 'lazy' });
+        renderMediaElement(media, thumb, { controls: false, autoplay: true, loading: 'lazy', preload: 'auto' });
         observer.disconnect();
       }
     }, { rootMargin: '220px' });
@@ -1054,7 +1076,7 @@
       item.className = 'history-item';
       const thumb = document.createElement('div');
       thumb.className = 'history-thumb';
-      if (media) renderMediaElement(media, thumb, { controls: false, autoplay: false });
+      if (media) renderMediaElement(media, thumb, { controls: false, autoplay: true, preload: 'auto' });
       else thumb.innerHTML = '<span class="muted">Suppr.</span>';
       const info = document.createElement('div');
       info.innerHTML = `

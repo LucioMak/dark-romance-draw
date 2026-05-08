@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dark-romance-draw-v1';
+const CACHE_NAME = 'dark-romance-draw-v2-webm';
 const CORE_ASSETS = [
   './',
   './index.html',

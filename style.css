@@ -422,3 +422,10 @@ button:active, .file-label:active { transform: scale(.985); }
   .history-actions { grid-column: 1 / -1; justify-content: flex-start; }
   .result-actions button, .timer-actions button, .sticky-actions button { flex: 1; }
 }
+
+
+video.needs-tap {
+  cursor: pointer;
+  outline: 1px solid rgba(255, 116, 156, .45);
+  box-shadow: 0 0 22px rgba(255, 46, 99, .18);
+}
