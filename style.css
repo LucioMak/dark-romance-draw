@@ -639,3 +639,57 @@ video.needs-tap {
   .compact-stats strong { font-size: .95rem; }
   .compact-stats span { font-size: .61rem; }
 }
+
+/* Correctif stabilité médias : moins d'animations simultanées, lecture WEBM plus robuste. */
+.play-overlay {
+  position: absolute;
+  inset: auto 50% 14px auto;
+  transform: translateX(50%);
+  z-index: 5;
+  border: 1px solid rgba(255, 190, 215, .42);
+  border-radius: 999px;
+  padding: 10px 16px;
+  min-height: 42px;
+  background: rgba(12, 2, 10, .82);
+  color: #ffe4ee;
+  font-weight: 800;
+  box-shadow: 0 14px 40px rgba(255, 46, 99, .22);
+  backdrop-filter: blur(14px);
+}
+.play-overlay:active { transform: translateX(50%) scale(.97); }
+.media-thumb video,
+.staging-preview video,
+.history-thumb video { pointer-events: auto; }
+.media-thumb video.media-video-thumb,
+.staging-preview video.media-video-thumb { cursor: pointer; }
+.media-thumb::after,
+.staging-preview::after {
+  content: 'aperçu';
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: .66rem;
+  color: #ffe4ee;
+  background: rgba(12, 2, 10, .58);
+  border: 1px solid rgba(255,255,255,.12);
+  pointer-events: none;
+}
+.media-thumb,
+.staging-preview { position: relative; }
+.history-thumb.static-thumb {
+  background: radial-gradient(circle at 30% 20%, rgba(255, 46, 99, .22), rgba(8, 2, 8, .95));
+  color: #ffddec;
+  font-weight: 800;
+  font-size: .74rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.result-media .muted { padding: 14px; text-align: center; }
+video.needs-tap + .play-overlay,
+.result-media .play-overlay { animation: resultPop .18s ease both; }
+@media (max-width: 680px) {
+  .play-overlay { bottom: 10px; padding: 9px 13px; min-height: 38px; }
+}

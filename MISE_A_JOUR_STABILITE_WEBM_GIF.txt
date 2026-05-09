@@ -1,0 +1,17 @@
+Correctif stabilité médias - Dark Romance Draw
+
+Fichiers à remplacer sur GitHub :
+- app.js
+- style.css
+- service-worker.js
+
+Ce correctif :
+- évite de lancer des dizaines de GIF/WEBM en arrière-plan ;
+- limite les aperçus lourds dans la bibliothèque et l'historique ;
+- lit les WEBM avec une vraie balise vidéo, en boucle, muette et compatible mobile ;
+- ajoute un bouton Lire/Reprendre si Chrome bloque l'autoplay ;
+- nettoie les anciennes URL temporaires pour éviter les ralentissements ;
+- met à jour le service worker pour forcer Chrome à prendre la nouvelle version.
+
+Après mise en ligne : attendre 1 à 3 minutes, ouvrir l'application dans Chrome, puis Actualiser deux fois.
+Si l'ancienne version reste affichée, fermer Chrome puis rouvrir le lien GitHub Pages.

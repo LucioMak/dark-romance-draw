@@ -3,7 +3,9 @@
 
   const DB_NAME = 'dark-romance-draw-db';
   const DB_VERSION = 1;
-  const PAGE_SIZE = 48;
+  const PAGE_SIZE = 24;
+  const STAGING_PREVIEW_LIMIT = 60;
+  const HISTORY_PREVIEW_LIMIT = 120;
   const SUPPORTED_MIME = [
     'image/gif', 'image/webp', 'image/png',
     'video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v',
@@ -210,6 +212,10 @@
     els.editForm.addEventListener('submit', saveEditDialog);
 
     window.addEventListener('beforeunload', revokeObjectUrls);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) pauseAllVideos();
+      else resumeResultVideo();
+    });
     window.addEventListener('beforeinstallprompt', event => {
       event.preventDefault();
       state.deferredInstallPrompt = event;
@@ -381,17 +387,25 @@
     state.allMedia = await getAll('media');
     state.history = (await getAll('draws')).sort((a, b) => b.drawnAt.localeCompare(a.drawnAt));
     renderStats();
-    renderLibrary();
-    renderHistory();
-    updateStorageInfo();
+    if (isViewActive('library-view')) renderLibrary();
+    if (isViewActive('history-view')) renderHistory();
+    if (isViewActive('settings-view')) updateStorageInfo();
+  }
+
+  function isViewActive(viewId) {
+    const view = document.getElementById(viewId);
+    return !!view && view.classList.contains('active');
   }
 
   function switchView(viewId) {
+    pauseBackgroundVideos();
+    cleanupInactiveViews(viewId);
     els.tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.view === viewId));
     els.views.forEach(view => view.classList.toggle('active', view.id === viewId));
     if (viewId === 'library-view') renderLibrary();
     if (viewId === 'history-view') renderHistory();
     if (viewId === 'settings-view') updateStorageInfo();
+    if (viewId === 'draw-view') resumeResultVideo();
   }
 
   function parseTags(value) {
@@ -463,67 +477,184 @@
     return url;
   }
 
+  function rememberContainerUrl(container, url) {
+    revokeContainerUrls(container);
+    container.dataset.objectUrl = url;
+    state.objectUrls.add(url);
+  }
+
+  function revokeContainerUrls(root) {
+    if (!root) return;
+    const nodes = [root, ...Array.from(root.querySelectorAll('[data-object-url]'))];
+    nodes.forEach(node => {
+      const url = node.dataset?.objectUrl;
+      if (url) {
+        try { URL.revokeObjectURL(url); } catch {}
+        state.objectUrls.delete(url);
+        delete node.dataset.objectUrl;
+      }
+    });
+  }
+
+  function clearMediaContainer(container) {
+    if (!container) return;
+    container.querySelectorAll('video').forEach(video => {
+      try { video.pause(); video.removeAttribute('src'); video.load(); } catch {}
+    });
+    revokeContainerUrls(container);
+    container.innerHTML = '';
+  }
+
   function revokeObjectUrls() {
-    state.objectUrls.forEach(url => URL.revokeObjectURL(url));
+    document.querySelectorAll('video').forEach(video => {
+      try { video.pause(); video.removeAttribute('src'); video.load(); } catch {}
+    });
+    state.objectUrls.forEach(url => { try { URL.revokeObjectURL(url); } catch {} });
     state.objectUrls.clear();
   }
 
-  function setupVideoElement(video, url, options = {}) {
+  function pauseAllVideos() {
+    document.querySelectorAll('video').forEach(video => {
+      try { video.pause(); } catch {}
+    });
+  }
+
+  function pauseBackgroundVideos() {
+    document.querySelectorAll('video').forEach(video => {
+      if (!els.resultMedia || !els.resultMedia.contains(video)) {
+        try { video.pause(); } catch {}
+      }
+    });
+  }
+
+  function resumeResultVideo() {
+    if (!isViewActive('draw-view') || !els.resultMedia) return;
+    const video = els.resultMedia.querySelector('video');
+    if (video && video.dataset.autoplay !== 'false') playVideoSafely(video, els.resultMedia);
+  }
+
+  function cleanupInactiveViews(activeViewId) {
+    if (activeViewId !== 'library-view') {
+      clearMediaContainer(els.mediaGrid);
+      if (els.libraryCount) els.libraryCount.textContent = `${state.allMedia.length} média(s).`;
+    }
+    if (activeViewId !== 'history-view') {
+      clearMediaContainer(els.historyList);
+    }
+  }
+
+  function showPlayOverlay(container, video, label = 'Lire') {
+    if (!container || container.querySelector('.play-overlay')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'play-overlay';
+    button.textContent = `▶ ${label}`;
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      playVideoSafely(video, container);
+    });
+    container.appendChild(button);
+  }
+
+  function hidePlayOverlay(container) {
+    container?.querySelector('.play-overlay')?.remove();
+  }
+
+  function playVideoSafely(video, container) {
+    if (!video) return Promise.resolve();
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute('muted', '');
+    const promise = video.play();
+    if (promise && typeof promise.catch === 'function') {
+      return promise.then(() => hidePlayOverlay(container)).catch(() => {
+        video.controls = true;
+        video.classList.add('needs-tap');
+        showPlayOverlay(container, video, 'Lire');
+      });
+    }
+    hidePlayOverlay(container);
+    return Promise.resolve();
+  }
+
+  function setupVideoElement(video, url, options = {}, container = null) {
+    const thumbnail = !!options.thumbnail;
     video.src = url;
     video.loop = true;
     video.muted = true;
     video.defaultMuted = true;
     video.playsInline = true;
-    video.autoplay = options.autoplay !== false;
-    video.controls = options.controls !== false;
-    video.preload = options.preload || 'auto';
+    video.autoplay = !thumbnail && options.autoplay !== false;
+    video.controls = thumbnail ? false : options.controls !== false;
+    video.preload = thumbnail ? 'metadata' : (options.preload || 'auto');
+    video.dataset.autoplay = video.autoplay ? 'true' : 'false';
     video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
+    video.setAttribute('disablepictureinpicture', '');
+
+    if (thumbnail) {
+      video.title = 'Appuie pour prévisualiser';
+      video.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (video.paused) {
+          pauseBackgroundVideos();
+          playVideoSafely(video, container);
+        } else {
+          video.pause();
+        }
+      });
+      return video;
+    }
 
     const tryPlay = () => {
       if (options.autoplay === false) return;
-      const promise = video.play();
-      if (promise && typeof promise.catch === 'function') {
-        promise.catch(() => {
-          video.controls = true;
-          video.classList.add('needs-tap');
-          video.title = 'Appuie pour lancer la vidéo';
-        });
-      }
+      playVideoSafely(video, container);
     };
 
-    video.addEventListener('loadeddata', tryPlay, { once: true });
-    video.addEventListener('canplay', tryPlay, { once: true });
-    video.addEventListener('click', () => {
-      if (video.paused) tryPlay();
+    ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough'].forEach(type => {
+      video.addEventListener(type, tryPlay, { once: true });
     });
+    video.addEventListener('playing', () => hidePlayOverlay(container));
+    video.addEventListener('pause', () => {
+      if (!document.hidden && isViewActive('draw-view') && els.resultMedia?.contains(video)) {
+        showPlayOverlay(container, video, 'Reprendre');
+      }
+    });
+    video.addEventListener('error', () => {
+      if (container) container.innerHTML = '<span class="muted">Cette vidéo ne peut pas être lue par ce navigateur. Essaie un autre fichier ou une conversion en GIF/MP4.</span>';
+    });
+
     requestAnimationFrame(tryPlay);
-    setTimeout(tryPlay, 300);
+    setTimeout(tryPlay, 250);
+    setTimeout(tryPlay, 900);
     return video;
   }
 
   async function renderMediaElement(media, container, options = {}) {
+    clearMediaContainer(container);
     container.innerHTML = '<span class="muted">Chargement...</span>';
     const fileRow = await getStoreValue('files', media.id);
     if (!fileRow?.blob) {
       container.innerHTML = '<span class="muted">Fichier introuvable</span>';
       return;
     }
-    const url = createUrl(fileRow.blob);
+    const url = URL.createObjectURL(fileRow.blob);
+    rememberContainerUrl(container, url);
     const kind = media.kind || detectKind(media.mimeType, media.fileName);
     container.innerHTML = '';
     if (kind === 'video') {
-      const video = setupVideoElement(document.createElement('video'), url, options);
-      video.addEventListener('error', () => {
-        container.innerHTML = '<span class="muted">Ce format vidéo n’est pas supporté par ce navigateur.</span>';
-      });
+      const video = setupVideoElement(document.createElement('video'), url, options, container);
       container.appendChild(video);
+      if (!options.thumbnail && options.autoplay !== false) video.load();
     } else {
       const img = document.createElement('img');
       img.src = url;
       img.alt = media.title || media.fileName || 'Média animé';
       img.loading = options.loading || 'lazy';
+      img.decoding = options.thumbnail ? 'async' : 'auto';
       img.addEventListener('error', () => {
         container.innerHTML = '<span class="muted">Image impossible à lire.</span>';
       });
@@ -576,6 +707,7 @@
   }
 
   function renderStaging() {
+    revokeContainerUrls(els.stagingList);
     els.stagingSummary.textContent = state.staging.length
       ? `${state.staging.length} fichier(s) prêts à importer.`
       : 'Aucun fichier sélectionné.';
@@ -583,7 +715,7 @@
     if (!state.staging.length) return;
 
     const fragment = document.createDocumentFragment();
-    state.staging.slice(0, 300).forEach(item => {
+    state.staging.slice(0, STAGING_PREVIEW_LIMIT).forEach(item => {
       const row = document.createElement('div');
       row.className = 'staging-item';
       row.dataset.id = item.id;
@@ -591,8 +723,9 @@
       const preview = document.createElement('div');
       preview.className = 'staging-preview';
       const url = createUrl(item.file);
+      preview.dataset.objectUrl = url;
       if (item.kind === 'video') {
-        const video = setupVideoElement(document.createElement('video'), url, { controls: false, autoplay: true, preload: 'auto' });
+        const video = setupVideoElement(document.createElement('video'), url, { controls: false, autoplay: false, preload: 'metadata', thumbnail: true }, preview);
         preview.appendChild(video);
       } else {
         const img = document.createElement('img');
@@ -615,10 +748,10 @@
       fragment.appendChild(row);
     });
     els.stagingList.appendChild(fragment);
-    if (state.staging.length > 300) {
+    if (state.staging.length > STAGING_PREVIEW_LIMIT) {
       const notice = document.createElement('p');
       notice.className = 'muted';
-      notice.textContent = `Aperçu limité aux 300 premiers fichiers pour ne pas transformer ton téléphone en grille-pain. Les ${state.staging.length} fichiers seront bien importés.`;
+      notice.textContent = `Aperçu limité aux ${STAGING_PREVIEW_LIMIT} premiers fichiers pour garder l’application fluide. Les ${state.staging.length} fichiers seront bien importés.`;
       els.stagingList.appendChild(notice);
     }
   }
@@ -654,6 +787,7 @@
   }
 
   function clearStaging() {
+    revokeContainerUrls(els.stagingList);
     state.staging = [];
     els.fileInput.value = '';
     renderStaging();
@@ -760,7 +894,7 @@
     els.pageLabel.textContent = `Page ${state.page} / ${maxPage}`;
     els.prevPage.disabled = state.page <= 1;
     els.nextPage.disabled = state.page >= maxPage;
-    els.mediaGrid.innerHTML = '';
+    clearMediaContainer(els.mediaGrid);
 
     if (!pageRows.length) {
       els.mediaGrid.innerHTML = `<div class="muted">Aucun média ne correspond. Même le hasard demande un minimum de matière première.</div>`;
@@ -800,7 +934,7 @@
     thumb.className = 'media-thumb';
     const observer = new IntersectionObserver(entries => {
       if (entries.some(entry => entry.isIntersecting)) {
-        renderMediaElement(media, thumb, { controls: false, autoplay: true, loading: 'lazy', preload: 'auto' });
+        renderMediaElement(media, thumb, { controls: false, autoplay: false, loading: 'lazy', preload: 'metadata', thumbnail: true });
         observer.disconnect();
       }
     }, { rootMargin: '220px' });
@@ -895,7 +1029,8 @@
   }
 
   async function performDraw() {
-    revokeObjectUrls();
+    pauseBackgroundVideos();
+    revokeContainerUrls(els.resultMedia);
     const candidates = getDrawCandidates();
     if (!candidates.length) {
       els.resultCard.classList.add('hidden');
@@ -990,6 +1125,7 @@
   }
 
   async function showResult(media, targetForDraw) {
+    pauseBackgroundVideos();
     els.resultCard.classList.remove('hidden');
     els.resultTarget.textContent = formatResultTarget(targetForDraw);
     els.resultTitle.textContent = media.title;
@@ -1064,19 +1200,19 @@
       ['Tirages', total], ['Faits', done], ['Pas faits', total - done], ['Lui', lui], ['Elle', elle], ['Jamais tirés', never], ['Niveau max', levelMax]
     ].map(([label, value]) => `<div><strong>${value}</strong>${label}</div>`).join('');
 
-    els.historyList.innerHTML = '';
+    clearMediaContainer(els.historyList);
     if (!state.history.length) {
       els.historyList.innerHTML = '<p class="muted">Aucun tirage pour le moment.</p>';
       return;
     }
     const fragment = document.createDocumentFragment();
-    state.history.slice(0, 300).forEach(draw => {
+    state.history.slice(0, HISTORY_PREVIEW_LIMIT).forEach(draw => {
       const media = byId.get(draw.mediaId);
       const item = document.createElement('article');
       item.className = 'history-item';
       const thumb = document.createElement('div');
-      thumb.className = 'history-thumb';
-      if (media) renderMediaElement(media, thumb, { controls: false, autoplay: true, preload: 'auto' });
+      thumb.className = 'history-thumb static-thumb';
+      if (media) thumb.innerHTML = `<span>${typeLabel(media)}</span>`;
       else thumb.innerHTML = '<span class="muted">Suppr.</span>';
       const info = document.createElement('div');
       info.innerHTML = `
@@ -1094,6 +1230,12 @@
       fragment.appendChild(item);
     });
     els.historyList.appendChild(fragment);
+    if (state.history.length > HISTORY_PREVIEW_LIMIT) {
+      const notice = document.createElement('p');
+      notice.className = 'muted';
+      notice.textContent = `Historique limité aux ${HISTORY_PREVIEW_LIMIT} derniers éléments affichés pour garder l’application fluide.`;
+      els.historyList.appendChild(notice);
+    }
   }
 
   async function showHistoryItem(media, draw) {
