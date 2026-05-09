@@ -1,0 +1,11 @@
+Correctif tirage fluide v2
+
+Ce correctif change le comportement des medias pour rendre le tirage plus stable :
+- le resultat est precharge avant affichage ;
+- les GIFs redemarrent au moment du tirage au lieu de se lancer trop tot ;
+- les WEBM attendent loadeddata/canplay puis tentent la lecture ;
+- la bibliotheque n'anime plus automatiquement tous les apercus ;
+- l'import n'affiche plus des dizaines de GIFs actifs en meme temps ;
+- le cache PWA passe en v5-result-preload.
+
+Fichiers a remplacer sur GitHub : app.js, style.css, service-worker.js.

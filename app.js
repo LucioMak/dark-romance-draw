@@ -4,7 +4,7 @@
   const DB_NAME = 'dark-romance-draw-db';
   const DB_VERSION = 1;
   const PAGE_SIZE = 24;
-  const STAGING_PREVIEW_LIMIT = 60;
+  const STAGING_PREVIEW_LIMIT = 12;
   const HISTORY_PREVIEW_LIMIT = 120;
   const SUPPORTED_MIME = [
     'image/gif', 'image/webp', 'image/png',
@@ -578,6 +578,72 @@
     return Promise.resolve();
   }
 
+  function withTimeout(promise, ms, fallbackValue = null) {
+    return new Promise(resolve => {
+      const timer = setTimeout(() => resolve(fallbackValue), ms);
+      promise.then(value => {
+        clearTimeout(timer);
+        resolve(value);
+      }).catch(() => {
+        clearTimeout(timer);
+        resolve(fallbackValue);
+      });
+    });
+  }
+
+  function waitForImageLoaded(url, timeout = 4500) {
+    return withTimeout(new Promise((resolve, reject) => {
+      const image = new Image();
+      image.decoding = 'sync';
+      image.onload = () => resolve(true);
+      image.onerror = reject;
+      image.src = url;
+    }), timeout, false);
+  }
+
+  function waitForVideoReady(video, timeout = 6000) {
+    return withTimeout(new Promise(resolve => {
+      const done = () => resolve(true);
+      if (video.readyState >= 2) return done();
+      ['loadeddata', 'canplay', 'canplaythrough'].forEach(type => video.addEventListener(type, done, { once: true }));
+      video.addEventListener('error', () => resolve(false), { once: true });
+      try { video.load(); } catch {}
+    }), timeout, false);
+  }
+
+  function setMediaLoading(container, label = 'Preparation du media...') {
+    if (!container) return;
+    container.classList.remove('media-ready');
+    container.classList.add('media-loading');
+    container.innerHTML = `<div class="media-loader"><span></span><strong>${escapeHtml(label)}</strong><small>Le fichier se prepare avant affichage pour eviter le premier bug.</small></div>`;
+  }
+
+  function clearMediaLoading(container) {
+    if (!container) return;
+    container.classList.remove('media-loading');
+    container.classList.add('media-ready');
+  }
+
+  function renderMediaPlaceholder(media, container) {
+    clearMediaContainer(container);
+    const kind = media.kind || detectKind(media.mimeType, media.fileName);
+    const label = kind === 'video' ? 'VIDEO' : typeLabel(media);
+    const sub = kind === 'video' ? 'Apercu WEBM/MP4' : 'Apercu GIF/WEBP';
+    container.innerHTML = `
+      <div class="static-media-preview">
+        <strong>${escapeHtml(label)}</strong>
+        <span>${escapeHtml(sub)}</span>
+        <button type="button">Apercu</button>
+      </div>
+    `;
+    const button = container.querySelector('button');
+    button?.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      renderMediaElement(media, container, { controls: true, autoplay: false, loading: 'eager', preload: 'metadata', thumbnail: true });
+    });
+  }
+
   function setupVideoElement(video, url, options = {}, container = null) {
     const thumbnail = !!options.thumbnail;
     video.src = url;
@@ -586,16 +652,17 @@
     video.defaultMuted = true;
     video.playsInline = true;
     video.autoplay = !thumbnail && options.autoplay !== false;
-    video.controls = thumbnail ? false : options.controls !== false;
+    video.controls = thumbnail ? true : options.controls !== false;
     video.preload = thumbnail ? 'metadata' : (options.preload || 'auto');
     video.dataset.autoplay = video.autoplay ? 'true' : 'false';
     video.setAttribute('muted', '');
     video.setAttribute('playsinline', '');
     video.setAttribute('webkit-playsinline', '');
     video.setAttribute('disablepictureinpicture', '');
+    video.classList.add(thumbnail ? 'media-video-thumb' : 'media-video-result');
 
     if (thumbnail) {
-      video.title = 'Appuie pour prévisualiser';
+      video.title = 'Appuie pour lancer l\'apercu';
       video.addEventListener('click', event => {
         event.preventDefault();
         event.stopPropagation();
@@ -624,41 +691,72 @@
       }
     });
     video.addEventListener('error', () => {
-      if (container) container.innerHTML = '<span class="muted">Cette vidéo ne peut pas être lue par ce navigateur. Essaie un autre fichier ou une conversion en GIF/MP4.</span>';
+      if (container) container.innerHTML = '<span class="muted">Cette video ne peut pas etre lue par ce navigateur. Essaie une conversion en GIF ou MP4.</span>';
     });
 
-    requestAnimationFrame(tryPlay);
-    setTimeout(tryPlay, 250);
-    setTimeout(tryPlay, 900);
     return video;
   }
 
   async function renderMediaElement(media, container, options = {}) {
     clearMediaContainer(container);
-    container.innerHTML = '<span class="muted">Chargement...</span>';
+    const thumbnail = !!options.thumbnail;
+    if (!thumbnail) setMediaLoading(container, 'Preparation du tirage...');
+    else container.innerHTML = '<span class="muted">Chargement...</span>';
+
     const fileRow = await getStoreValue('files', media.id);
     if (!fileRow?.blob) {
       container.innerHTML = '<span class="muted">Fichier introuvable</span>';
       return;
     }
+
     const url = URL.createObjectURL(fileRow.blob);
     rememberContainerUrl(container, url);
     const kind = media.kind || detectKind(media.mimeType, media.fileName);
-    container.innerHTML = '';
+
     if (kind === 'video') {
       const video = setupVideoElement(document.createElement('video'), url, options, container);
-      container.appendChild(video);
-      if (!options.thumbnail && options.autoplay !== false) video.load();
-    } else {
-      const img = document.createElement('img');
-      img.src = url;
-      img.alt = media.title || media.fileName || 'Média animé';
-      img.loading = options.loading || 'lazy';
-      img.decoding = options.thumbnail ? 'async' : 'auto';
-      img.addEventListener('error', () => {
-        container.innerHTML = '<span class="muted">Image impossible à lire.</span>';
+      if (!thumbnail) {
+        video.classList.add('result-media-preparing');
+        container.appendChild(video);
+        await waitForVideoReady(video, 6500);
+        container.querySelector('.media-loader')?.remove();
+        clearMediaLoading(container);
+        video.classList.remove('result-media-preparing');
+        video.classList.add('result-media-ready');
+        await playVideoSafely(video, container);
+        setTimeout(() => {
+          if (!document.hidden && isViewActive('draw-view') && els.resultMedia?.contains(video) && video.paused) {
+            playVideoSafely(video, container);
+          }
+        }, 500);
+      } else {
+        container.innerHTML = '';
+        container.appendChild(video);
+      }
+      return;
+    }
+
+    if (!thumbnail) await waitForImageLoaded(url, 5000);
+
+    const img = document.createElement('img');
+    img.alt = media.title || media.fileName || 'Media anime';
+    img.loading = thumbnail ? 'lazy' : 'eager';
+    img.decoding = thumbnail ? 'async' : 'sync';
+    img.addEventListener('error', () => {
+      container.innerHTML = '<span class="muted">Image impossible a lire.</span>';
+    });
+
+    container.innerHTML = '';
+    container.appendChild(img);
+
+    if (!thumbnail) {
+      // On affecte la source apres insertion dans le DOM pour que les GIFs redemarrent proprement au tirage.
+      requestAnimationFrame(() => {
+        img.src = url;
+        clearMediaLoading(container);
       });
-      container.appendChild(img);
+    } else {
+      img.src = url;
     }
   }
 
@@ -721,18 +819,8 @@
       row.dataset.id = item.id;
 
       const preview = document.createElement('div');
-      preview.className = 'staging-preview';
-      const url = createUrl(item.file);
-      preview.dataset.objectUrl = url;
-      if (item.kind === 'video') {
-        const video = setupVideoElement(document.createElement('video'), url, { controls: false, autoplay: false, preload: 'metadata', thumbnail: true }, preview);
-        preview.appendChild(video);
-      } else {
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = item.title;
-        preview.appendChild(img);
-      }
+      preview.className = 'staging-preview static-thumb';
+      preview.innerHTML = `<div class="static-media-preview"><strong>${escapeHtml(item.extension || typeLabel(item))}</strong><span>Apercu apres import</span></div>`;
 
       row.append(
         preview,
@@ -931,14 +1019,8 @@
     });
 
     const thumb = document.createElement('div');
-    thumb.className = 'media-thumb';
-    const observer = new IntersectionObserver(entries => {
-      if (entries.some(entry => entry.isIntersecting)) {
-        renderMediaElement(media, thumb, { controls: false, autoplay: false, loading: 'lazy', preload: 'metadata', thumbnail: true });
-        observer.disconnect();
-      }
-    }, { rootMargin: '220px' });
-    observer.observe(thumb);
+    thumb.className = 'media-thumb static-thumb';
+    renderMediaPlaceholder(media, thumb);
 
     const body = document.createElement('div');
     body.className = 'media-body';
