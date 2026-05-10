@@ -1,0 +1,5 @@
+Correctif visuel premium
+
+Remplace index.html, style.css, app.js et service-worker.js sur GitHub.
+
+Ce correctif ne retire aucune fonction. Il rend l'interface plus ronde, plus chaleureuse, plus professionnelle, avec un rendu mobile plus proche d'une application native.

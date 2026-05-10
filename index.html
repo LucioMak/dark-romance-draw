@@ -48,10 +48,10 @@
     <nav class="tabs" aria-label="Navigation principale">
       <button class="tab active" data-view="draw-view">Tirage</button>
       <button class="tab" data-view="library-view">Bibliothèque</button>
-      <button class="tab" data-view="import-view">Import</button>
+      <button class="tab" data-view="import-view">Ajouter</button>
       <button class="tab" data-view="history-view">Historique</button>
       <button class="tab" data-view="music-view">Musique</button>
-      <button class="tab" data-view="settings-view">Paramètres</button>
+      <button class="tab" data-view="settings-view">Réglages</button>
     </nav>
 
     <main>
@@ -61,9 +61,9 @@
             <div class="draw-topline">
               <div>
                 <p class="eyebrow">Tirage au sort</p>
-                <h2>Le tirage, le média et les boutons au même endroit.</h2>
+                <h2>Votre tirage privé, fluide et prêt à jouer.</h2>
               </div>
-              <span class="pill soft-pill">Mode jeu</span>
+              <span class="pill soft-pill">Session</span>
             </div>
 
             <div class="quick-draw-controls">
@@ -101,7 +101,7 @@
             </section>
 
             <details class="advanced-draw-settings">
-              <summary>Filtres avancés : niveaux, tags, déjà faits</summary>
+              <summary>Réglages du tirage</summary>
               <div class="draw-options compact-options">
                 <label>Type de tirage
                   <select id="draw-mode">
@@ -222,7 +222,7 @@
           <div class="section-head">
             <div>
               <p class="eyebrow">Ajout</p>
-              <h2>Importer des GIFs, vidéos et médias animés</h2>
+              <h2>Ajouterer des GIFs, vidéos et médias animés</h2>
             </div>
           </div>
           <div id="drop-zone" class="drop-zone">
@@ -253,7 +253,7 @@
           <div id="staging-list" class="staging-list"></div>
           <div class="sticky-actions">
             <button id="clear-staging" class="ghost-btn">Vider la sélection</button>
-            <button id="save-staging" class="primary-btn">Importer dans l’application</button>
+            <button id="save-staging" class="primary-btn">Ajouterer dans l’application</button>
           </div>
           <div id="import-progress" class="progress hidden"><span></span></div>
         </div>
@@ -300,7 +300,7 @@
       <section id="settings-view" class="view">
         <div class="panel settings-panel">
           <p class="eyebrow">Contrôle</p>
-          <h2>Paramètres</h2>
+          <h2>Réglages</h2>
           <div class="settings-grid">
             <article>
               <h3>Sécurité</h3>
@@ -325,7 +325,7 @@
               <div class="button-stack">
                 <button id="export-light" class="ghost-btn">Exporter léger</button>
                 <button id="export-full" class="ghost-btn">Exporter complet</button>
-                <label class="file-label">Importer sauvegarde<input id="backup-input" type="file" accept="application/json,.json" /></label>
+                <label class="file-label">Ajouterer sauvegarde<input id="backup-input" type="file" accept="application/json,.json" /></label>
               </div>
             </article>
             <article>
