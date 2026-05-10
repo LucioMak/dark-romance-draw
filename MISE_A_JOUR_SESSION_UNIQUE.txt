@@ -1,0 +1,9 @@
+Correctif session unique
+
+Remplace app.js et service-worker.js sur GitHub.
+
+Nouveau comportement :
+- pendant une meme session, un GIF/WEBM deja tire ne sera plus retire une deuxieme fois ;
+- la session est conservee si la page est rechargee ;
+- si tous les medias compatibles ont deja ete tires, la session se remet automatiquement a zero ;
+- verrouiller l'application relance une nouvelle session.

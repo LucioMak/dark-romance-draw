@@ -12,6 +12,7 @@
     'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp4'
   ];
   const MEDIA_EXTENSIONS = ['gif', 'webp', 'mp4', 'webm', 'mov', 'm4v', 'apng', 'png'];
+  const DRAW_SESSION_KEY = 'dark-romance-draw-session-v1';
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
@@ -29,6 +30,7 @@
     selectedIds: new Set(),
     objectUrls: new Set(),
     deferredInstallPrompt: null,
+    sessionDrawnIds: new Set(),
     timer: {
       running: false,
       startedAt: null,
@@ -49,6 +51,7 @@
     await loadTheme();
     await setupServiceWorker();
     await checkPinState();
+    restoreDrawSession();
     restoreTimer();
     updateTimerDisplay();
   }
@@ -366,6 +369,7 @@
     state.unlocked = false;
     state.currentResult = null;
     state.currentDraw = null;
+    clearDrawSession(false);
     revokeObjectUrls();
     checkPinState();
   }
@@ -383,9 +387,44 @@
     return Array.from(values).map(v => v.toString(16)).join('-');
   }
 
+  function restoreDrawSession() {
+    try {
+      const raw = sessionStorage.getItem(DRAW_SESSION_KEY);
+      const ids = raw ? JSON.parse(raw) : [];
+      state.sessionDrawnIds = new Set(Array.isArray(ids) ? ids : []);
+    } catch {
+      state.sessionDrawnIds = new Set();
+    }
+  }
+
+  function saveDrawSession() {
+    try {
+      sessionStorage.setItem(DRAW_SESSION_KEY, JSON.stringify(Array.from(state.sessionDrawnIds)));
+    } catch {}
+  }
+
+  function clearDrawSession(showMessage = false) {
+    state.sessionDrawnIds.clear();
+    saveDrawSession();
+    if (showMessage) toast('Session de tirage remise à zéro. Tous les médias redeviennent disponibles.');
+  }
+
+  function pruneDrawSession() {
+    const validIds = new Set(state.allMedia.map(media => media.id));
+    let changed = false;
+    state.sessionDrawnIds.forEach(id => {
+      if (!validIds.has(id)) {
+        state.sessionDrawnIds.delete(id);
+        changed = true;
+      }
+    });
+    if (changed) saveDrawSession();
+  }
+
   async function refreshData() {
     state.allMedia = await getAll('media');
     state.history = (await getAll('draws')).sort((a, b) => b.drawnAt.localeCompare(a.drawnAt));
+    pruneDrawSession();
     renderStats();
     if (isViewActive('library-view')) renderLibrary();
     if (isViewActive('history-view')) renderHistory();
@@ -1113,10 +1152,18 @@
   async function performDraw() {
     pauseBackgroundVideos();
     revokeContainerUrls(els.resultMedia);
-    const candidates = getDrawCandidates();
-    if (!candidates.length) {
+    const allCandidates = getDrawCandidates();
+    if (!allCandidates.length) {
       els.resultCard.classList.add('hidden');
       return toast('Aucun média compatible avec ces filtres. Le hasard est prêt, ton stock non.');
+    }
+
+    let candidates = allCandidates.filter(media => !state.sessionDrawnIds.has(media.id));
+    if (!candidates.length) {
+      clearDrawSession(false);
+      candidates = allCandidates;
+      toast('Tous les médias de cette session ont déjà été tirés. La session repart de zéro.');
+      await wait(160);
     }
 
     els.drawBtn.disabled = true;
@@ -1124,6 +1171,8 @@
     await wait(420);
 
     const selected = selectCandidate(candidates);
+    state.sessionDrawnIds.add(selected.id);
+    saveDrawSession();
     const targetForDraw = resolveDrawTarget(selected);
     const now = new Date().toISOString();
     selected.drawCount = (selected.drawCount || 0) + 1;
@@ -1618,6 +1667,7 @@
     await clearStore('media');
     await clearStore('files');
     await clearStore('draws');
+    clearDrawSession(false);
     await refreshData();
     toast('Données supprimées.');
   }
@@ -1629,6 +1679,7 @@
     await clearStore('media');
     await clearStore('files');
     await clearStore('draws');
+    clearDrawSession(false);
     localStorage.removeItem('drd_timer');
     localStorage.removeItem('drd_deezer_url');
     toast('Application réinitialisée.');

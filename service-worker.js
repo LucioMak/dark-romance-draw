@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dark-romance-draw-v5-result-preload';
+const CACHE_NAME = 'dark-romance-draw-v6-session-unique';
 const CORE_ASSETS = [
   './',
   './index.html',
